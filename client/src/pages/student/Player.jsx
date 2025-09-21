@@ -157,7 +157,19 @@ const Player = ({ }) => {
                           {lecture.lectureUrl ? (
                             <p onClick={() => {
                               console.log('🎥 Lecture URL:', lecture.lectureUrl);
-                              console.log('🎥 Video ID:', lecture.lectureUrl.split('/').pop());
+                              
+                              // Extract video ID properly for debugging
+                              const url = lecture.lectureUrl;
+                              let videoId;
+                              if (url.includes('youtube.com/watch?v=')) {
+                                videoId = url.split('v=')[1].split('&')[0];
+                              } else if (url.includes('youtu.be/')) {
+                                videoId = url.split('youtu.be/')[1].split('?')[0];
+                              } else {
+                                videoId = url.split('/').pop();
+                              }
+                              console.log('🎥 Extracted Video ID:', videoId);
+                              
                               setPlayerData({ ...lecture, chapter: index + 1, lecture: i + 1 });
                             }} className='text-blue-500 cursor-pointer'>Watch</p>
                           ) : (
@@ -187,7 +199,18 @@ const Player = ({ }) => {
             ? (
               <div>
                 {(() => {
-                  const videoId = playerData.lectureUrl.split('/').pop();
+                  // Extract video ID from YouTube URL properly
+                  const url = playerData.lectureUrl;
+                  let videoId;
+                  
+                  if (url.includes('youtube.com/watch?v=')) {
+                    videoId = url.split('v=')[1].split('&')[0];
+                  } else if (url.includes('youtu.be/')) {
+                    videoId = url.split('youtu.be/')[1].split('?')[0];
+                  } else {
+                    videoId = url.split('/').pop();
+                  }
+                  
                   console.log('🎬 Rendering YouTube with videoId:', videoId);
                   return (
                     <YouTube 
