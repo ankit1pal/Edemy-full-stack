@@ -24,6 +24,8 @@ const Player = ({ }) => {
   const getCourseData = () => {
     enrolledCourses.map((course) => {
       if (course._id === courseId) {
+        console.log('📚 Course Data:', course);
+        console.log('📚 Course Content:', course.courseContent);
         setCourseData(course)
         course.courseRatings.map((item) => {
           if (item.userId === userData._id) {
@@ -152,7 +154,15 @@ const Player = ({ }) => {
                       <div className="flex items-center justify-between w-full text-gray-800 text-xs md:text-default">
                         <p>{lecture.lectureTitle}</p>
                         <div className='flex gap-2'>
-                          {lecture.lectureUrl && <p onClick={() => setPlayerData({ ...lecture, chapter: index + 1, lecture: i + 1 })} className='text-blue-500 cursor-pointer'>Watch</p>}
+                          {lecture.lectureUrl ? (
+                            <p onClick={() => {
+                              console.log('🎥 Lecture URL:', lecture.lectureUrl);
+                              console.log('🎥 Video ID:', lecture.lectureUrl.split('/').pop());
+                              setPlayerData({ ...lecture, chapter: index + 1, lecture: i + 1 });
+                            }} className='text-blue-500 cursor-pointer'>Watch</p>
+                          ) : (
+                            <p className='text-gray-400'>No URL</p>
+                          )}
                           <p>{humanizeDuration(lecture.lectureDuration * 60 * 1000, { units: ['h', 'm'] })}</p>
                         </div>
                       </div>
@@ -176,7 +186,22 @@ const Player = ({ }) => {
           playerData
             ? (
               <div>
-                <YouTube iframeClassName='w-full aspect-video' videoId={playerData.lectureUrl.split('/').pop()} />
+                {(() => {
+                  const videoId = playerData.lectureUrl.split('/').pop();
+                  console.log('🎬 Rendering YouTube with videoId:', videoId);
+                  return (
+                    <YouTube 
+                      iframeClassName='w-full aspect-video' 
+                      videoId={videoId}
+                      onError={(error) => {
+                        console.error('❌ YouTube Error:', error);
+                      }}
+                      onReady={(event) => {
+                        console.log('✅ YouTube Ready:', event);
+                      }}
+                    />
+                  );
+                })()}
                 <div className='flex justify-between items-center mt-1'>
                   <p className='text-xl '>{playerData.chapter}.{playerData.lecture} {playerData.lectureTitle}</p>
                   <button onClick={() => markLectureAsCompleted(playerData.lectureId)} className='text-blue-600'>{progressData && progressData.lectureCompleted.includes(playerData.lectureId) ? 'Completed' : 'Mark Complete'}</button>
