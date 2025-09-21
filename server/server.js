@@ -41,7 +41,17 @@ app.use(clerkMiddleware())
 app.get('/', (req, res) => res.send("API Working"))
 app.post('/clerk', express.json() , clerkWebhooks)
 // Handle webhook with proper body parsing for Vercel
-app.post('/stripe', express.raw({ type: 'application/json' }), stripeWebhooks)
+app.post('/stripe', (req, res) => {
+  // For Vercel, we need to handle raw body manually
+  let body = '';
+  req.on('data', chunk => {
+    body += chunk.toString();
+  });
+  req.on('end', () => {
+    req.body = body;
+    stripeWebhooks(req, res);
+  });
+})
 
 // Test endpoint for webhook debugging
 app.get('/webhook-test', (req, res) => {

@@ -71,7 +71,31 @@ const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY)
 
 // Stripe Webhooks to Manage Payments Action
 export const stripeWebhooks = async (request, response) => {
+  console.log('🔔 Webhook received:', {
+    method: request.method,
+    url: request.url,
+    headers: {
+      'content-type': request.headers['content-type'],
+      'stripe-signature': request.headers['stripe-signature'] ? 'Present' : 'Missing',
+      'user-agent': request.headers['user-agent']
+    },
+    bodyType: typeof request.body,
+    bodyLength: request.body ? request.body.length : 0
+  });
+
   const sig = request.headers['stripe-signature'];
+
+  // Check if we have the required signature header
+  if (!sig) {
+    console.error('❌ Missing stripe-signature header');
+    return response.status(400).send('Missing stripe-signature header');
+  }
+
+  // Check if we have the webhook secret
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error('❌ Missing STRIPE_WEBHOOK_SECRET environment variable');
+    return response.status(500).send('Server configuration error');
+  }
 
   let event;
 
@@ -79,19 +103,22 @@ export const stripeWebhooks = async (request, response) => {
     // Get raw body for signature verification
     let body = request.body;
     
-    // If body is already parsed (common in Vercel), we need to reconstruct it
-    if (typeof body === 'object' && body !== null) {
-      body = JSON.stringify(body);
+    // Ensure we have a string body for signature verification
+    if (typeof body !== 'string') {
+      console.error('❌ Request body is not a string:', typeof body);
+      return response.status(400).send('Invalid request body format');
     }
 
-    // Verify webhook signature
+    // Verify webhook signature with raw body
     event = stripeInstance.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     console.log('✅ Webhook signature verified successfully');
   }
   catch (err) {
     console.error('❌ Webhook signature verification failed:', err.message);
     console.error('Request body type:', typeof request.body);
-    console.error('Request headers:', request.headers);
+    console.error('Request body length:', request.body ? request.body.length : 'undefined');
+    console.error('Stripe signature header:', sig);
+    console.error('Webhook secret set:', process.env.STRIPE_WEBHOOK_SECRET ? 'Yes' : 'No');
     return response.status(400).send(`Webhook Error: ${err.message}`);
   }
 
